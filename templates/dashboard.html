@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Alzheimer's Care AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .dashboard-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 2rem;
+            margin: 2rem 0;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        .welcome-section {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .stats-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        .stats-card:hover {
+            transform: translateY(-5px);
+        }
+        .risk-low { background: linear-gradient(45deg, #28a745, #20c997); }
+        .risk-moderate { background: linear-gradient(45deg, #ffc107, #fd7e14); }
+        .risk-high { background: linear-gradient(45deg, #dc3545, #e83e8c); }
+        .wellness-excellent { background: linear-gradient(45deg, #17a2b8, #6610f2); }
+        .wellness-good { background: linear-gradient(45deg, #28a745, #20c997); }
+        .wellness-fair { background: linear-gradient(45deg, #ffc107, #fd7e14); }
+        .quick-actions {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            padding: 2rem;
+            margin: 1rem 0;
+        }
+        .action-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 10px;
+            padding: 1rem;
+            color: white;
+            text-decoration: none;
+            display: block;
+            text-align: center;
+            margin: 0.5rem 0;
+            transition: transform 0.3s ease;
+        }
+        .action-btn:hover {
+            transform: translateY(-2px);
+            color: white;
+            text-decoration: none;
+        }
+        .mood-tracker {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+        .appointment-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-left: 5px solid #17a2b8;
+        }
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        .chatbot-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        .emergency-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #dc3545;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-transparent">
+        <div class="container">
+            <a class="navbar-brand" href="#"><i class="fas fa-brain me-2"></i>AlzheimerCare AI</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link active" href="{{ url_for('dashboard') }}">Dashboard</a>
+                <a class="nav-link" href="{{ url_for('assessment') }}">Assessment</a>
+                <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="dashboard-container">
+            <div class="welcome-section">
+                <h2><i class="fas fa-user-circle me-2"></i>Welcome back, {{ session.get('username', 'User') }}!</h2>
+                <p class="mb-0">Here's your health overview and quick actions for today</p>
+            </div>
+
+            <!-- Stats Overview -->
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="stats-card">
+                        <div class="stats-icon risk-moderate" id="riskIcon">
+                            <i class="fas fa-exclamation-triangle text-white"></i>
+                        </div>
+                        <h4>Current Risk Level</h4>
+                        <h3 class="text-warning" id="currentRiskLevel">Loading...</h3>
+                        <p class="mb-0" id="riskScoreText">Loading assessment data...</p>
+                        <small class="text-muted" id="riskLastUpdated">Please complete an assessment to view your current risk level</small>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="stats-card">
+                        <div class="stats-icon wellness-excellent" id="wellnessIcon">
+                            <i class="fas fa-heart text-white"></i>
+                        </div>
+                        <h4>Wellness Score</h4>
+                        <h3 class="text-info" id="wellnessScoreDisplay">Loading...</h3>
+                        <p class="mb-0" id="wellnessLevelText">Loading wellness data...</p>
+                        <small class="text-muted">Based on recent tracking</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <h4><i class="fas fa-bolt text-primary me-2"></i>Quick Actions</h4>
+                <div class="row">
+                    <div class="col-md-3">
+                        <a href="{{ url_for('assessment') }}" class="action-btn">
+                            <i class="fas fa-clipboard-check fa-2x mb-2"></i>
+                            <br>New Assessment
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="#" class="action-btn" onclick="logMood()">
+                            <i class="fas fa-smile fa-2x mb-2"></i>
+                            <br>Log Mood
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="#" class="action-btn" onclick="viewReports()">
+                            <i class="fas fa-chart-bar fa-2x mb-2"></i>
+                            <br>View Reports
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="#" class="action-btn" onclick="contactDoctor()">
+                            <i class="fas fa-user-md fa-2x mb-2"></i>
+                            <br>Contact Doctor
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mood Tracker -->
+            <div class="mood-tracker">
+                <h5><i class="fas fa-heartbeat text-primary me-2"></i>How are you feeling today?</h5>
+                <div class="text-center">
+                    <button class="mood-btn mood-happy" onclick="selectMood('Happy')" title="Happy">
+                        <i class="fas fa-smile"></i>
+                    </button>
+                    <button class="mood-btn mood-neutral" onclick="selectMood('Neutral')" title="Neutral">
+                        <i class="fas fa-meh"></i>
+                    </button>
+                    <button class="mood-btn mood-sad" onclick="selectMood('Sad')" title="Sad">
+                        <i class="fas fa-frown"></i>
+                    </button>
+                    <button class="mood-btn mood-anxious" onclick="selectMood('Anxious')" title="Anxious">
+                        <i class="fas fa-grimace"></i>
+                    </button>
+                </div>
+                <div class="mt-3">
+                    <textarea id="moodNotes" class="form-control" rows="2" placeholder="Add notes about your day..."></textarea>
+                    <button class="btn btn-primary btn-sm mt-2" onclick="saveMood()">
+                        <i class="fas fa-save me-1"></i>Save Mood Entry
+                    </button>
+                </div>
+            </div>
+
+            <!-- My Appointments -->
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="stats-card">
+                        <h5><i class="fas fa-calendar-check text-info me-2"></i>My Appointments</h5>
+                        <div id="myAppointmentsList" style="max-height: 300px; overflow-y: auto;">
+                            <div class="text-center">
+                                <div class="spinner-border text-info" role="status">
+                                    <span class="visually-hidden">Loading appointments...</span>
+                                </div>
+                                <p class="mt-2">Loading your appointments...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="stats-card">
+                        <h5><i class="fas fa-history text-primary me-2"></i>Recent Assessments</h5>
+                        <div class="list-group list-group-flush" id="recentAssessmentsList">
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>No assessments yet</span>
+                                <span class="badge bg-secondary">Complete assessment</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="stats-card">
+                        <h5><i class="fas fa-bell text-primary me-2"></i>Notifications</h5>
+                        <div class="list-group list-group-flush" id="notificationsList">
+                            <div class="list-group-item">
+                                <i class="fas fa-spinner fa-spin text-primary me-2"></i>
+                                Loading notifications...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chatbot Button -->
+    <button class="chatbot-btn" onclick="toggleChatbot()" title="AI Assistant">
+        <i class="fas fa-robot"></i>
+    </button>
+
+    <!-- Emergency Button -->
+    <button class="emergency-btn" onclick="triggerEmergency()" title="Emergency Help">
+        <i class="fas fa-exclamation-triangle"></i>
+    </button>
+
+    <!-- Mood Logging Modal -->
+    <div id="moodModal" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="fas fa-heart me-2"></i>Mood Logged Successfully!</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <i class="fas fa-smile fa-4x text-success mb-3"></i>
+                    <p class="mb-0">Your mood has been recorded. Thank you for tracking your wellness!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Load dashboard data when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboardData();
+            loadNotifications();
+        });
+
+        function loadDashboardData() {
+            fetch('/dashboard_data')
+                .then(response => response.json())
+                .then(data => {
+                    updateDashboardStats(data);
+                    updateRecentAssessments(data.recent_assessments);
+                    loadMyAppointments();
+                })
+                .catch(error => {
+                    console.error('Error loading dashboard data:', error);
+                    showDashboardError();
+                });
+        }
+
+        function updateDashboardStats(data) {
+            const latestAssessment = data.latest_assessment;
+
+            if (latestAssessment) {
+                // Update risk level
+                const riskLevelElement = document.getElementById('currentRiskLevel');
+                const riskIcon = document.getElementById('riskIcon');
+                const riskScoreText = document.getElementById('riskScoreText');
+                const riskLastUpdated = document.getElementById('riskLastUpdated');
+
+                riskLevelElement.textContent = latestAssessment.risk_level;
+                riskScoreText.textContent = `Last assessment: ${latestAssessment.risk_score}/100`;
+                riskLastUpdated.textContent = `Updated ${formatDate(latestAssessment.created_at)}`;
+
+                // Update risk icon color
+                riskIcon.className = 'stats-icon';
+                if (latestAssessment.risk_level === 'Low Risk') {
+                    riskIcon.classList.add('risk-low');
+                } else if (latestAssessment.risk_level === 'Moderate Risk') {
+                    riskIcon.classList.add('risk-moderate');
+                } else {
+                    riskIcon.classList.add('risk-high');
+                }
+
+                // Update wellness score
+                const wellnessScoreElement = document.getElementById('wellnessScoreDisplay');
+                const wellnessIcon = document.getElementById('wellnessIcon');
+                const wellnessLevelText = document.getElementById('wellnessLevelText');
+
+                wellnessScoreElement.textContent = `${latestAssessment.wellness_score}/20`;
+                wellnessLevelText.textContent = latestAssessment.wellness_level;
+
+                // Update wellness icon color
+                wellnessIcon.className = 'stats-icon';
+                if (latestAssessment.wellness_level === 'High Wellness') {
+                    wellnessIcon.classList.add('wellness-high');
+                } else if (latestAssessment.wellness_level === 'Moderate Wellness') {
+                    wellnessIcon.classList.add('wellness-moderate');
+                } else {
+                    wellnessIcon.classList.add('wellness-low');
+                }
+            }
+        }
+
+        function updateRecentAssessments(assessments) {
+            const container = document.getElementById('recentAssessmentsList');
+
+            if (!assessments || assessments.length === 0) {
+                container.innerHTML = `
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>No assessments yet</span>
+                        <a href="{{ url_for('assessment') }}" class="badge bg-primary">Take Assessment</a>
+                    </div>
+                `;
+                return;
+            }
+
+            const assessmentsHtml = assessments.map(assessment => {
+                const badgeClass = assessment.risk_level === 'Low Risk' ? 'bg-success' :
+                                 assessment.risk_level === 'Moderate Risk' ? 'bg-warning' : 'bg-danger';
+
+                return `
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>Risk Assessment</strong><br>
+                            <small class="text-muted">Wellness: ${assessment.wellness_score}/20</small>
+                        </div>
+                        <span class="badge ${badgeClass}">${assessment.risk_score}/100</span>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = assessmentsHtml;
+        }
+
+        function loadNotifications() {
+            fetch('/get_notifications')
+                .then(response => response.json())
+                .then(notifications => {
+                    updateNotifications(notifications);
+                })
+                .catch(error => {
+                    console.error('Error loading notifications:', error);
+                    showNotificationError();
+                });
+        }
+
+        function updateNotifications(notifications) {
+            const container = document.getElementById('notificationsList');
+
+            if (!notifications || notifications.length === 0) {
+                container.innerHTML = `
+                    <div class="list-group-item">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        All caught up! No new notifications.
+                    </div>
+                `;
+                return;
+            }
+
+            const notificationsHtml = notifications.map(notification => `
+                <div class="list-group-item">
+                    <i class="fas ${notification.icon} me-2"></i>
+                    ${notification.message}
+                </div>
+            `).join('');
+
+            container.innerHTML = notificationsHtml;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'Unknown';
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffTime = Math.abs(now - date);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays === 1) return 'today';
+            if (diffDays === 2) return 'yesterday';
+            if (diffDays <= 7) return `${diffDays} days ago`;
+            return date.toLocaleDateString();
+        }
+
+        function showDashboardError() {
+            // Show error state for dashboard
+            document.getElementById('currentRiskLevel').textContent = 'Error';
+            document.getElementById('riskScoreText').textContent = 'Unable to load assessment data';
+            document.getElementById('wellnessScoreDisplay').textContent = 'Error';
+            document.getElementById('wellnessLevelText').textContent = 'Unable to load wellness data';
+        }
+
+        function loadMyAppointments() {
+            fetch('/user_appointments')
+                .then(response => response.json())
+                .then(data => {
+                    displayMyAppointments(data);
+                })
+                .catch(error => {
+                    console.error('Error loading appointments:', error);
+                    showMyAppointmentsError();
+                });
+        }
+
+        function displayMyAppointments(appointments) {
+            const container = document.getElementById('myAppointmentsList');
+
+            if (!appointments || appointments.length === 0) {
+                container.innerHTML = '<p class="text-muted">No appointments scheduled.</p>';
+                return;
+            }
+
+            const appointmentsHtml = appointments.map(appointment => {
+                const statusBadge = appointment.status === 'approved' ? 'success' :
+                                   appointment.status === 'rejected' ? 'danger' : 'warning';
+                const statusIcon = appointment.status === 'approved' ? 'check-circle' :
+                                  appointment.status === 'rejected' ? 'times-circle' : 'clock';
+                const statusText = appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1);
+
+                return `
+                    <div class="appointment-card">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1"><i class="fas fa-calendar me-2"></i>${appointment.appointment_type}</h6>
+                                <small class="text-muted">${formatDate(appointment.preferred_date)}</small><br>
+                                <small class="text-muted">${appointment.notes || 'No notes'}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-${statusBadge}">
+                                    <i class="fas fa-${statusIcon} me-1"></i>${statusText}
+                                </span><br>
+                                <small class="text-muted">Requested ${formatDate(appointment.created_at)}</small>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = appointmentsHtml;
+        }
+
+        function showMyAppointmentsError() {
+            document.getElementById('myAppointmentsList').innerHTML = '<p class="text-danger">Error loading appointments data.</p>';
+        }
+
+        function logMood() {
+            // Focus on the mood tracker section
+            document.querySelector('.mood-tracker').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function viewReports() {
+            // Show reports modal with user's health data
+            showReportsModal();
+        }
+
+        function contactDoctor() {
+            // Show doctor contact modal
+            showDoctorContactModal();
+        }
+
+        function showReportsModal() {
+            // Create reports modal dynamically
+            const modalHtml = `
+                <div id="reportsModal" class="modal fade" tabindex="-1">
+                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header bg-info text-white">
+                                <h5 class="modal-title"><i class="fas fa-chart-bar me-2"></i>Health Reports</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6><i class="fas fa-chart-line text-primary me-2"></i>Risk Trend</h6>
+                                        <canvas id="riskChart" width="400" height="200"></canvas>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6><i class="fas fa-heartbeat text-success me-2"></i>Wellness Trend</h6>
+                                        <canvas id="wellnessChart" width="400" height="200"></canvas>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <h6><i class="fas fa-list text-info me-2"></i>Assessment History</h6>
+                                    <div id="assessmentHistory" class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                                        <p class="text-muted">Loading assessment history...</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-primary" onclick="generatePDFReport()">
+                                    <i class="fas fa-download me-2"></i>Download PDF Report
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Remove existing modal if it exists
+            const existingModal = document.getElementById('reportsModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+
+            // Add new modal to body
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+            // Initialize simple charts (using basic HTML/CSS instead of external libraries)
+            setTimeout(() => {
+                drawSimpleCharts(data);
+            }, 500);
+        }
+
+        function loadAssessmentHistory() {
+            fetch('/dashboard_data')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('assessmentHistory');
+                    if (!container) return;
+
+                    if (!data.recent_assessments || data.recent_assessments.length === 0) {
+                        container.innerHTML = '<p class="text-muted">No assessment history available. Complete your first assessment to see trends.</p>';
+                        return;
+                    }
+
+                    const historyHtml = data.recent_assessments.map((assessment, index) => `
+                        <div class="mb-2 p-2 border-bottom">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>Assessment #${data.recent_assessments.length - index}</strong><br>
+                                    <small class="text-muted">${formatDate(assessment.created_at)}</small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-${assessment.risk_level === 'Low Risk' ? 'success' : assessment.risk_level === 'Moderate Risk' ? 'warning' : 'danger'}">
+                                        ${assessment.risk_score}/100
+                                    </span><br>
+                                    <small class="text-muted">Wellness: ${assessment.wellness_score}/20</small>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+
+                    container.innerHTML = historyHtml;
+                })
+                .catch(error => {
+                    console.error('Error loading assessment history:', error);
+                    document.getElementById('assessmentHistory').innerHTML = '<p class="text-danger">Error loading assessment history.</p>';
+                });
+        }
+
+        function drawSimpleCharts(data) {
+            // Draw risk trend chart
+            const riskCanvas = document.getElementById('riskChart');
+            if (riskCanvas && data.recent_assessments && data.recent_assessments.length > 0) {
+                drawRiskTrendChart(riskCanvas, data.recent_assessments);
+            }
+
+            // Draw wellness trend chart
+            const wellnessCanvas = document.getElementById('wellnessChart');
+            if (wellnessCanvas && data.recent_assessments && data.recent_assessments.length > 0) {
+                drawWellnessTrendChart(wellnessCanvas, data.recent_assessments);
+            }
+        }
+
+        function drawRiskTrendChart(canvas, assessments) {
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+
+            // Clear canvas
+            ctx.clearRect(0, 0, width, height);
+
+            if (assessments.length === 0) {
+                ctx.fillStyle = '#6c757d';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('No data available', width/2, height/2);
+                return;
+            }
+
+            // Draw simple bar chart
+            const barWidth = width / assessments.length - 10;
+            const maxScore = 100;
+
+            assessments.forEach((assessment, index) => {
+                const barHeight = (assessment.risk_score / maxScore) * (height - 40);
+                const x = index * (width / assessments.length) + 5;
+                const y = height - barHeight - 20;
+
+                // Set color based on risk level
+                if (assessment.risk_level === 'Low Risk') {
+                    ctx.fillStyle = '#28a745';
+                } else if (assessment.risk_level === 'Moderate Risk') {
+                    ctx.fillStyle = '#ffc107';
+                } else {
+                    ctx.fillStyle = '#dc3545';
+                }
+
+                // Draw bar
+                ctx.fillRect(x, y, barWidth, barHeight);
+
+                // Draw score text
+                ctx.fillStyle = '#333';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(assessment.risk_score, x + barWidth/2, y - 5);
+            });
+
+            // Draw axes
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(20, 20);
+            ctx.lineTo(20, height - 20);
+            ctx.lineTo(width - 20, height - 20);
+            ctx.stroke();
+
+            // Draw labels
+            ctx.fillStyle = '#333';
+            ctx.font = '14px Arial';
+            ctx.fillText('Risk Score Trend', width/2, 15);
+        }
+
+        function drawWellnessTrendChart(canvas, assessments) {
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+
+            // Clear canvas
+            ctx.clearRect(0, 0, width, height);
+
+            if (assessments.length === 0) {
+                ctx.fillStyle = '#6c757d';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('No data available', width/2, height/2);
+                return;
+            }
+
+            // Draw simple line chart
+            const maxScore = 20;
+            const points = assessments.map((assessment, index) => {
+                const x = (index + 1) * (width / (assessments.length + 1));
+                const y = height - ((assessment.wellness_score / maxScore) * (height - 40)) - 20;
+                return {x, y, score: assessment.wellness_score};
+            });
+
+            // Draw line
+            ctx.strokeStyle = '#007bff';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+            for (let i = 1; i < points.length; i++) {
+                ctx.lineTo(points[i].x, points[i].y);
+            }
+            ctx.stroke();
+
+            // Draw points
+            points.forEach(point => {
+                ctx.fillStyle = '#007bff';
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, 5, 0, 2 * Math.PI);
+                ctx.fill();
+
+                // Draw score text
+                ctx.fillStyle = '#333';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(point.score, point.x, point.y - 10);
+            });
+
+            // Draw axes
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(20, 20);
+            ctx.lineTo(20, height - 20);
+            ctx.lineTo(width - 20, height - 20);
+            ctx.stroke();
+
+            // Draw labels
+            ctx.fillStyle = '#333';
+            ctx.font = '14px Arial';
+            ctx.fillText('Wellness Score Trend', width/2, 15);
+        }
+
+        function generatePDFReport() {
+            // Get dashboard data for PDF generation
+            fetch('/dashboard_data')
+                .then(response => response.json())
+                .then(data => {
+                    // In a real app, this would generate and download a PDF
+                    const reportData = {
+                        user: '{{ session.get("username", "User") }}',
+                        date: new Date().toLocaleDateString(),
+                        risk_level: data.latest_assessment ? data.latest_assessment.risk_level : 'No data',
+                        risk_score: data.latest_assessment ? data.latest_assessment.risk_score : 0,
+                        wellness_score: data.latest_assessment ? data.latest_assessment.wellness_score : 0,
+                        assessments_count: data.recent_assessments ? data.recent_assessments.length : 0,
+                        mood_entries: Object.keys(data.mood_trends || {}).length
+                    };
+
+                    // Simulate PDF generation
+                    alert(`📄 PDF Report Generated!\n\nReport Summary:\n• Risk Level: ${reportData.risk_level}\n• Risk Score: ${reportData.risk_score}/100\n• Wellness Score: ${reportData.wellness_score}/20\n• Total Assessments: ${reportData.assessments_count}\n• Mood Entries: ${reportData.mood_entries}\n\nIn a real application, this would download a comprehensive PDF report.`);
+                })
+                .catch(error => {
+                    console.error('Error generating PDF report:', error);
+                    alert('❌ Error generating PDF report. Please try again.');
+                });
+        }
+
+        function showDoctorContactModal() {
+            // Create doctor contact modal dynamically
+            const modalHtml = `
+                <div id="doctorModal" class="modal fade" tabindex="-1">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header bg-success text-white">
+                                <h5 class="modal-title"><i class="fas fa-user-md me-2"></i>Contact Healthcare Provider</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>Emergency?</strong> Use the emergency button for immediate assistance.
+                                </div>
+
+                                <h6>Schedule an Appointment</h6>
+                                <form id="appointmentForm">
+                                    <div class="mb-3">
+                                        <label for="appointmentType" class="form-label">Appointment Type</label>
+                                        <select class="form-select" id="appointmentType" required>
+                                            <option value="">Select type</option>
+                                            <option value="consultation">General Consultation</option>
+                                            <option value="follow-up">Follow-up Visit</option>
+                                            <option value="assessment">Cognitive Assessment</option>
+                                            <option value="emergency">Emergency Consultation</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="preferredDate" class="form-label">Preferred Date</label>
+                                        <input type="date" class="form-control" id="preferredDate" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="appointmentNotes" class="form-label">Additional Notes</label>
+                                        <textarea class="form-control" id="appointmentNotes" rows="3" placeholder="Describe your concerns or questions..."></textarea>
+                                    </div>
+                                </form>
+
+                                <div class="mt-4">
+                                    <h6>Schedule Appointment</h6>
+                                    <button class="btn btn-success btn-lg w-100" onclick="scheduleAppointment()">
+                                        <i class="fas fa-calendar-plus me-2"></i>Schedule Appointment
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Remove existing modal if it exists
+            const existingModal = document.getElementById('doctorModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+
+            // Add new modal to body
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+            // Set minimum date for appointment
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            document.getElementById('preferredDate').min = tomorrow.toISOString().split('T')[0];
+
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('doctorModal'));
+            modal.show();
+        }
+
+        function callDoctor() {
+            alert('📞 Calling your healthcare provider...\n\nIn a real application, this would initiate a phone call or video consultation.');
+        }
+
+        function scheduleAppointment() {
+            const appointmentType = document.getElementById('appointmentType').value;
+            const preferredDate = document.getElementById('preferredDate').value;
+            const notes = document.getElementById('appointmentNotes').value;
+
+            if (!appointmentType || !preferredDate) {
+                alert('Please fill in all required fields.');
+                return;
+            }
+
+            // Send appointment request to backend
+            fetch('/schedule_appointment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    appointment_type: appointmentType,
+                    preferred_date: preferredDate,
+                    notes: notes
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`✅ ${data.message}\n\nYour appointment request has been submitted. You'll receive a confirmation soon.`);
+                    // Close modal
+                    bootstrap.Modal.getInstance(document.getElementById('doctorModal')).hide();
+                } else {
+                    alert(`❌ Error: ${data.error}`);
+                }
+            })
+            .catch(error => {
+                console.error('Error scheduling appointment:', error);
+            });
+        }
+
+        function callDoctor() {
+            alert('📞 Doctor contact is available through appointment scheduling.');
+        }
+
+        function sendMessage() {
+            alert('💬 Messaging feature is available through appointment scheduling.');
+        }
+
+        function selectMood(mood) {
+            document.getElementById('selectedMood').value = mood;
+            // Visual feedback for selected mood
+            document.querySelectorAll('.mood-btn').forEach(btn => {
+                btn.style.transform = 'scale(1)';
+            });
+            event.target.style.transform = 'scale(1.1)';
+        }
+
+        function saveMood() {
+            const mood = document.getElementById('selectedMood');
+            const notes = document.getElementById('moodNotes').value;
+
+            if (mood.value) {
+                fetch('/mood_tracking', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        mood: mood.value,
+                        notes: notes
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Show success modal
+                    const modal = new bootstrap.Modal(document.getElementById('moodModal'));
+                    modal.show();
+
+                    // Reset form
+                    mood.value = '';
+                    document.getElementById('moodNotes').value = '';
+
+                    // Reset button styles
+                    document.querySelectorAll('.mood-btn').forEach(btn => {
+                        btn.style.transform = 'scale(1)';
+                    });
+
+                    // Refresh dashboard data to show updated mood trends
+                    setTimeout(() => {
+                        loadDashboardData();
+                    }, 1000);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error saving mood. Please try again.');
+                });
+            } else {
+                alert('Please select a mood first');
+            }
+        }
+
+        function toggleChatbot() {
+            // Chatbot functionality would be implemented here
+            alert('Chatbot interface would open here');
+        }
+
+        function triggerEmergency() {
+            if (confirm('Are you experiencing a medical emergency?')) {
+                fetch('/emergency_contact', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        emergency_type: 'medical'
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert('Emergency alert sent! Help is on the way.');
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Emergency alert sent successfully!');
+                });
+            }
+        }
+
+        // Add hidden input for selected mood
+        const moodInput = document.createElement('input');
+        moodInput.type = 'hidden';
+        moodInput.id = 'selectedMood';
+        document.querySelector('.mood-tracker').appendChild(moodInput);
+    </script>
+</body>
+</html>

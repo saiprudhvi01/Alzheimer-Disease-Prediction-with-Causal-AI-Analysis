@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Risk Assessment - Alzheimer's Care AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .assessment-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 3rem;
+            margin: 2rem 0;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        .form-section {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            padding: 2rem;
+            margin: 1rem 0;
+            border-left: 5px solid #667eea;
+        }
+        .risk-factor {
+            margin: 1rem 0;
+        }
+        .wellness-section {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+        }
+        .btn-calculate {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 25px;
+            padding: 1rem 3rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        .btn-calculate:hover {
+            background: linear-gradient(45deg, #764ba2, #667eea);
+        }
+        .results-container {
+            display: none;
+            margin-top: 2rem;
+        }
+        .risk-score {
+            font-size: 3rem;
+            font-weight: bold;
+            text-align: center;
+            margin: 1rem 0;
+        }
+        .risk-low { color: #28a745; }
+        .risk-moderate { color: #ffc107; }
+        .risk-high { color: #dc3545; }
+        .causal-analysis {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            border-left: 5px solid #007bff;
+        }
+        .wellness-score {
+            background: linear-gradient(45deg, #17a2b8, #6610f2);
+            color: white;
+            border-radius: 10px;
+            padding: 1rem;
+            text-align: center;
+        }
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        .language-selector {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-transparent">
+        <div class="container">
+            <a class="navbar-brand" href="#"><i class="fas fa-brain me-2"></i>AlzheimerCare AI</a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('index') }}">Home</a>
+                <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
+                <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Language Selector -->
+    <div class="language-selector">
+        <select id="languageSelect" class="form-select" onchange="changeLanguage()">
+            <option value="en">English</option>
+            <option value="hi">हिंदी</option>
+            <option value="te">తెలుగు</option>
+            <option value="ta">தமிழ்</option>
+        </select>
+    </div>
+
+    <div class="container">
+        <div class="assessment-container">
+            <h1 class="text-center mb-4">
+                <i class="fas fa-clipboard-check text-primary me-3"></i>
+                Comprehensive Risk Assessment
+            </h1>
+            <p class="text-center text-muted mb-4">
+                Please answer the following questions to receive your personalized risk analysis and wellness recommendations.
+            </p>
+
+            <form id="assessmentForm">
+                <!-- Risk Factors Section -->
+                <div class="form-section">
+                    <h4><i class="fas fa-exclamation-triangle text-danger me-2"></i>Risk Factors</h4>
+
+                    <div class="risk-factor">
+                        <label class="form-label"><strong>Memory Loss:</strong></label>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <input type="radio" name="memory_loss" value="None" id="memory_none" required>
+                                <label for="memory_none" class="ms-2">None</label>
+                            </div>
+                            <div class="col-md-3">
+                                <input type="radio" name="memory_loss" value="Mild" id="memory_mild">
+                                <label for="memory_mild" class="ms-2">Mild</label>
+                            </div>
+                            <div class="col-md-3">
+                                <input type="radio" name="memory_loss" value="Moderate" id="memory_moderate">
+                                <label for="memory_moderate" class="ms-2">Moderate</label>
+                            </div>
+                            <div class="col-md-3">
+                                <input type="radio" name="memory_loss" value="Severe" id="memory_severe">
+                                <label for="memory_severe" class="ms-2">Severe</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="risk-factor">
+                        <label class="form-label"><strong>Age Group:</strong></label>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <input type="radio" name="age_group" value="Below 60" id="age_below60" required>
+                                <label for="age_below60" class="ms-2">Below 60</label>
+                            </div>
+                            <div class="col-md-3">
+                                <input type="radio" name="age_group" value="60-70" id="age_60_70">
+                                <label for="age_60_70" class="ms-2">60-70</label>
+                            </div>
+                            <div class="col-md-3">
+                                <input type="radio" name="age_group" value="70-80" id="age_70_80">
+                                <label for="age_70_80" class="ms-2">70-80</label>
+                            </div>
+                            <div class="col-md-3">
+                                <input type="radio" name="age_group" value="Above 80" id="age_above80">
+                                <label for="age_above80" class="ms-2">Above 80</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="risk-factor">
+                                <label class="form-label"><strong>Problem Solving:</strong></label>
+                                <div>
+                                    <input type="radio" name="problem_solving" value="No" id="problem_no" required>
+                                    <label for="problem_no" class="ms-2">No issues</label><br>
+                                    <input type="radio" name="problem_solving" value="Yes" id="problem_yes">
+                                    <label for="problem_yes" class="ms-2">Having difficulties</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="risk-factor">
+                                <label class="form-label"><strong>Disorientation:</strong></label>
+                                <div>
+                                    <input type="radio" name="disorientation" value="No" id="disorientation_no" required>
+                                    <label for="disorientation_no" class="ms-2">No issues</label><br>
+                                    <input type="radio" name="disorientation" value="Yes" id="disorientation_yes">
+                                    <label for="disorientation_yes" class="ms-2">Getting confused</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="risk-factor">
+                                <label class="form-label"><strong>Mood Swings:</strong></label>
+                                <div>
+                                    <input type="radio" name="mood_swings" value="No" id="mood_no" required>
+                                    <label for="mood_no" class="ms-2">Stable mood</label><br>
+                                    <input type="radio" name="mood_swings" value="Yes" id="mood_yes">
+                                    <label for="mood_yes" class="ms-2">Frequent changes</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="risk-factor">
+                                <label class="form-label"><strong>Family History:</strong></label>
+                                <div>
+                                    <input type="radio" name="family_history" value="No" id="family_no" required>
+                                    <label for="family_no" class="ms-2">No family history</label><br>
+                                    <input type="radio" name="family_history" value="Yes" id="family_yes">
+                                    <label for="family_yes" class="ms-2">Family history present</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="risk-factor">
+                        <label class="form-label"><strong>Poor Judgment:</strong></label>
+                        <div>
+                            <input type="radio" name="poor_judgment" value="No" id="judgment_no" required>
+                            <label for="judgment_no" class="ms-2">Making good decisions</label><br>
+                            <input type="radio" name="poor_judgment" value="Yes" id="judgment_yes">
+                            <label for="judgment_yes" class="ms-2">Poor decision making</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Wellness Factors Section -->
+                <div class="form-section wellness-section">
+                    <h4><i class="fas fa-heart text-white me-2"></i>Wellness Factors</h4>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label class="form-label text-white"><strong>Sleep Quality (1-5):</strong></label>
+                            <select name="sleep_quality" class="form-select" required>
+                                <option value="">Select quality</option>
+                                <option value="1">1 - Very Poor</option>
+                                <option value="2">2 - Poor</option>
+                                <option value="3">3 - Fair</option>
+                                <option value="4">4 - Good</option>
+                                <option value="5">5 - Excellent</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label text-white"><strong>Mood Level (1-5):</strong></label>
+                            <select name="mood_level" class="form-select" required>
+                                <option value="">Select mood</option>
+                                <option value="1">1 - Very Low</option>
+                                <option value="2">2 - Low</option>
+                                <option value="3">3 - Neutral</option>
+                                <option value="4">4 - Good</option>
+                                <option value="5">5 - Excellent</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label text-white"><strong>Social Engagement:</strong></label>
+                            <select name="social_engagement" class="form-select" required>
+                                <option value="">Select engagement</option>
+                                <option value="None">None</option>
+                                <option value="Rarely">Rarely</option>
+                                <option value="Often">Often</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center">
+                    <button type="submit" class="btn btn-calculate">
+                        <i class="fas fa-calculator me-2"></i>Calculate Risk & Get Analysis
+                    </button>
+                </div>
+            </form>
+
+            <!-- Results Section -->
+            <div id="resultsContainer" class="results-container">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h4 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Risk Assessment</h4>
+                            </div>
+                            <div class="card-body text-center">
+                                <div id="riskScore" class="risk-score risk-moderate">Calculating...</div>
+                                <p id="riskLevel" class="h5">Processing your results...</p>
+                                <div class="mt-3">
+                                    <small class="text-muted">Risk Score: <span id="riskScoreValue"></span>/100</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="wellness-score">
+                            <h4><i class="fas fa-heart me-2"></i>Wellness Score</h4>
+                            <div id="wellnessScore" class="h3">Calculating...</div>
+                            <p id="wellnessLevel">Processing...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="causal-analysis">
+                            <h5><i class="fas fa-brain me-2"></i>Causal AI Analysis</h5>
+                            <div id="causalAnalysis">
+                                <div class="text-center">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Analyzing...</span>
+                                    </div>
+                                    <p class="mt-2">Generating personalized analysis...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0"><i class="fas fa-shield-alt me-2"></i>Prevention Plan</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="preventionPlan">
+                                    <p>Loading prevention strategies...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Predictive Alerts</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="predictiveAlerts">
+                                    <p>Loading risk predictions...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4">
+                    <button class="btn btn-primary me-2" onclick="retakeAssessment()">
+                        <i class="fas fa-redo me-2"></i>Retake Assessment
+                    </button>
+                    <button class="btn btn-success me-2" onclick="generatePDF()">
+                        <i class="fas fa-file-pdf me-2"></i>Generate PDF Report
+                    </button>
+                    <button class="btn btn-info" onclick="consultDoctor()">
+                        <i class="fas fa-user-md me-2"></i>Consult Doctor
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('assessmentForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const assessmentData = {};
+
+            // Collect risk factors
+            assessmentData.memory_loss = formData.get('memory_loss');
+            assessmentData.age_group = formData.get('age_group');
+            assessmentData.problem_solving = formData.get('problem_solving');
+            assessmentData.disorientation = formData.get('disorientation');
+            assessmentData.mood_swings = formData.get('mood_swings');
+            assessmentData.family_history = formData.get('family_history');
+            assessmentData.poor_judgment = formData.get('poor_judgment');
+
+            // Collect wellness factors
+            assessmentData.wellness = {
+                sleep_quality: formData.get('sleep_quality'),
+                mood_level: formData.get('mood_level'),
+                social_engagement: formData.get('social_engagement')
+            };
+
+            // Validate required fields
+            const requiredFields = ['memory_loss', 'age_group', 'problem_solving', 'disorientation', 'mood_swings', 'family_history', 'poor_judgment'];
+            const wellnessFields = ['sleep_quality', 'mood_level', 'social_engagement'];
+
+            let isValid = true;
+            for (let field of requiredFields) {
+                if (!assessmentData[field]) {
+                    isValid = false;
+                    alert(`Please select ${field.replace('_', ' ')}`);
+                    break; // Exit the loop
+                }
+            }
+
+            if (!isValid) return; // Exit the function
+
+            // Validate wellness fields
+            for (let field of wellnessFields) {
+                if (!assessmentData.wellness[field]) {
+                    isValid = false;
+                    alert(`Please select ${field.replace('_', ' ')}`);
+                    break; // Exit the loop
+                }
+            }
+
+            if (!isValid) return; // Exit the function
+            console.log('Sending data to backend:', assessmentData); // Debug log
+            fetch('/calculate_risk', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(assessmentData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Received data:', data); // Debug log
+                displayResults(data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error calculating risk. Please check your internet connection and try again.');
+            });
+        });
+
+        function displayResults(data) {
+            console.log('Displaying results:', data); // Debug log
+
+            // Show results container
+            document.getElementById('resultsContainer').style.display = 'block';
+
+            // Update risk score display
+            const riskScoreElement = document.getElementById('riskScore');
+            const riskLevelElement = document.getElementById('riskLevel');
+            const riskScoreValueElement = document.getElementById('riskScoreValue');
+
+            if (riskScoreElement && data.risk_score !== undefined) {
+                riskScoreElement.textContent = data.risk_score;
+                console.log('Updated risk score:', data.risk_score);
+            }
+
+            if (riskScoreValueElement && data.risk_score !== undefined) {
+                riskScoreValueElement.textContent = data.risk_score;
+            }
+
+            if (riskLevelElement && data.risk_level) {
+                riskLevelElement.textContent = data.risk_level;
+                console.log('Updated risk level:', data.risk_level);
+            }
+
+            // Set risk level color
+            if (riskScoreElement && data.risk_level) {
+                riskScoreElement.className = 'risk-score';
+                if (data.risk_level === 'Low Risk') {
+                    riskScoreElement.classList.add('risk-low');
+                } else if (data.risk_level === 'Moderate Risk') {
+                    riskScoreElement.classList.add('risk-moderate');
+                } else {
+                    riskScoreElement.classList.add('risk-high');
+                }
+            }
+
+            // Update wellness score
+            const wellnessScoreElement = document.getElementById('wellnessScore');
+            const wellnessLevelElement = document.getElementById('wellnessLevel');
+
+            if (wellnessScoreElement && data.wellness_score !== undefined) {
+                wellnessScoreElement.textContent = `${data.wellness_score}/20`;
+                console.log('Updated wellness score:', data.wellness_score);
+            }
+
+            if (wellnessLevelElement && data.wellness_level) {
+                wellnessLevelElement.textContent = data.wellness_level;
+                console.log('Updated wellness level:', data.wellness_level);
+            }
+
+            // Display causal analysis
+            if (data.causal_analysis) {
+                displayCausalAnalysis(data.causal_analysis);
+                console.log('Updated causal analysis');
+            }
+
+            // Generate prevention plan
+            if (data.risk_score !== undefined && data.risk_level) {
+                generatePreventionPlan(data);
+                console.log('Updated prevention plan');
+            }
+
+            // Get predictive alerts
+            if (data.risk_score !== undefined) {
+                getPredictiveAlerts(data.risk_score);
+                console.log('Updated predictive alerts');
+            }
+
+            // Re-enable button
+            const button = document.querySelector('.btn-calculate');
+            if (button) {
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-calculator me-2"></i>Calculate Risk & Get Analysis';
+            }
+
+            console.log('Results display completed');
+        }
+
+        function displayCausalAnalysis(analysis) {
+            const container = document.getElementById('causalAnalysis');
+            if (container && analysis) {
+                container.innerHTML = analysis.map(line => `<p>${line}</p>`).join('');
+                console.log('Causal analysis displayed successfully');
+            } else {
+                console.error('Causal analysis container not found or analysis data missing');
+            }
+        }
+
+        function generatePreventionPlan(data) {
+            const container = document.getElementById('preventionPlan');
+            if (!container) {
+                console.error('Prevention plan container not found');
+                return;
+            }
+
+            let plan = '';
+
+            if (data.risk_level === 'High Risk') {
+                plan += '<div class="alert alert-danger"><strong>Medical consultation recommended</strong></div>';
+            }
+
+            if (data.risk_score > 20) {
+                plan += '<p><i class="fas fa-brain text-primary me-2"></i>Memory training exercises recommended</p>';
+            }
+
+            if (data.wellness_score < 10) {
+                plan += '<p><i class="fas fa-heart text-danger me-2"></i>Stress management techniques needed</p>';
+            }
+
+            plan += '<p><i class="fas fa-running text-success me-2"></i>Regular exercise routine</p>';
+            plan += '<p><i class="fas fa-utensils text-info me-2"></i>Brain-healthy diet</p>';
+            plan += '<p><i class="fas fa-users text-warning me-2"></i>Maintain social engagement</p>';
+            plan += '<p><i class="fas fa-bed text-secondary me-2"></i>Quality sleep schedule</p>';
+
+            container.innerHTML = plan;
+            console.log('Prevention plan generated successfully');
+        }
+
+        function getPredictiveAlerts(currentRisk) {
+            const container = document.getElementById('predictiveAlerts');
+            if (!container) {
+                console.error('Predictive alerts container not found');
+                return;
+            }
+
+            fetch('/predictive_alerts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ current_risk: currentRisk })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.alerts && data.alerts.length > 0) {
+                    container.innerHTML = data.alerts.map(alert =>
+                        `<div class="alert alert-warning"><strong>${alert.type}:</strong> ${alert.message}</div>`
+                    ).join('');
+                } else {
+                    container.innerHTML = '<p class="text-success">No immediate risk alerts. Continue monitoring.</p>';
+                }
+                console.log('Predictive alerts updated successfully');
+            })
+            .catch(error => {
+                console.error('Error getting predictive alerts:', error);
+                container.innerHTML = '<p class="text-muted">Unable to load predictive alerts.</p>';
+            });
+        }
+
+        function retakeAssessment() {
+            document.getElementById('assessmentForm').reset();
+            document.getElementById('resultsContainer').style.display = 'none';
+        }
+
+        function generatePDF() {
+            alert('PDF generation would be implemented here with reportlab');
+        }
+
+        function consultDoctor() {
+            alert('Doctor consultation booking would be implemented here');
+        }
+
+        function changeLanguage() {
+            const language = document.getElementById('languageSelect').value;
+            if (language !== 'en') {
+                // Translate current page content
+                const elementsToTranslate = document.querySelectorAll('h1, h4, h5, p, label, .btn');
+                elementsToTranslate.forEach(element => {
+                    if (element.textContent.trim()) {
+                        fetch('/translate', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                text: element.textContent,
+                                target_lang: language
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.translated_text) {
+                                element.textContent = data.translated_text;
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Translation error:', error);
+                        });
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>
