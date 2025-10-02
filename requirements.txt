@@ -1,6 +1,5 @@
 Flask==2.3.3
 Werkzeug==2.3.7
-googletrans==4.0.0rc1
 reportlab==4.0.7
 PyPDF2==3.0.1
 gunicorn==21.2.0

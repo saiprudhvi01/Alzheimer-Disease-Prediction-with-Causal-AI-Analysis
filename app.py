@@ -15,7 +15,7 @@ import statistics
 import math
 
 # Import compatible packages for Python 3.13
-import googletrans  # For multi-language support
+# import googletrans  # For multi-language support - REMOVED due to Python 3.13 compatibility issues
 from reportlab.pdfgen import canvas  # For PDF generation
 from reportlab.lib.pagesizes import letter
 from werkzeug.security import generate_password_hash, check_password_hash
