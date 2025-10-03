@@ -1,6 +1,20 @@
-Flask==2.3.3
-Werkzeug==2.3.7
+# Core Flask dependencies - Python 3.13 compatible
+Flask==3.0.0
+Werkzeug==3.0.1
+Jinja2==3.1.2
+
+# Database and utilities
+SQLAlchemy==2.0.23
+
+# PDF generation - Python 3.13 compatible
 reportlab==4.0.7
 PyPDF2==3.0.1
+
+# Production server
 gunicorn==21.2.0
+
+# Environment variables
 python-dotenv==1.0.0
+
+# Date and time utilities (built-in with Python 3.13)
+# Additional utilities if needed for enhanced functionality
