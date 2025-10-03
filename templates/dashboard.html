@@ -98,20 +98,81 @@
             cursor: pointer;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         }
-        .emergency-btn {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            z-index: 1000;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: #dc3545;
-            border: none;
+        .chatbot-modal {
+            max-width: 400px;
+        }
+        .chat-messages {
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+        }
+        .message {
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            border-radius: 8px;
+        }
+        .user-message {
+            background: linear-gradient(45deg, #667eea, #764ba2);
             color: white;
-            font-size: 20px;
+            text-align: right;
+            margin-left: 2rem;
+        }
+        .bot-message {
+            background: white;
+            color: #333;
+            margin-right: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .message-timestamp {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            margin-top: 0.25rem;
+        }
+        .chat-input-container {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .chat-input {
+            flex: 1;
+            border-radius: 20px;
+            padding: 0.5rem 1rem;
+            border: 1px solid #ddd;
+        }
+        .send-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            color: white;
+        }
+        .related-queries {
+            margin-top: 1rem;
+        }
+        .related-query {
+            display: inline-block;
+            background: #e9ecef;
+            color: #495057;
+            padding: 0.25rem 0.5rem;
+            margin: 0.25rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s;
+        }
+        .related-query:hover {
+            background: #667eea;
+            color: white;
+        }
+        .typing-indicator {
+            display: none;
+            font-style: italic;
+            color: #6c757d;
+            text-align: center;
+            padding: 0.5rem;
         }
     </style>
 </head>
@@ -272,6 +333,51 @@
     <button class="emergency-btn" onclick="triggerEmergency()" title="Emergency Help">
         <i class="fas fa-exclamation-triangle"></i>
     </button>
+
+    <!-- Chatbot Modal -->
+    <div id="chatbotModal" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered chatbot-modal">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fas fa-robot me-2"></i>Alzheimer's Care Assistant</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Chat Messages -->
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="message bot-message">
+                            <div>Hello! I'm your Alzheimer's Care Assistant. I can help you with information about Alzheimer's disease, symptoms, prevention, treatment, and caregiving. What would you like to know?</div>
+                            <div class="message-timestamp">Just now</div>
+                        </div>
+                    </div>
+
+                    <!-- Related Queries -->
+                    <div class="related-queries" id="relatedQueries" style="display: none;">
+                        <small class="text-muted">Related topics:</small>
+                    </div>
+
+                    <!-- Typing Indicator -->
+                    <div class="typing-indicator" id="typingIndicator">
+                        <i class="fas fa-circle-notch fa-spin me-1"></i>Thinking...
+                    </div>
+
+                    <!-- Chat Input -->
+                    <div class="chat-input-container">
+                        <input type="text" class="chat-input" id="chatInput" placeholder="Ask me anything about Alzheimer's..." onkeypress="handleChatKeyPress(event)">
+                        <button class="send-btn" onclick="sendChatMessage()">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        I provide general information. For personalized medical advice, consult healthcare professionals.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Mood Logging Modal -->
     <div id="moodModal" class="modal fade" tabindex="-1">
@@ -937,8 +1043,126 @@
         }
 
         function toggleChatbot() {
-            // Chatbot functionality would be implemented here
-            alert('Chatbot interface would open here');
+            // Initialize or show chatbot modal
+            let chatbotModal = document.getElementById('chatbotModal');
+            if (!chatbotModal) {
+                // Create chatbot modal if it doesn't exist
+                createChatbotModal();
+                chatbotModal = document.getElementById('chatbotModal');
+            }
+
+            const modal = new bootstrap.Modal(chatbotModal);
+            modal.show();
+
+            // Focus on input when modal opens
+            setTimeout(() => {
+                document.getElementById('chatInput').focus();
+            }, 500);
+        }
+
+        function createChatbotModal() {
+            // This function is called if modal doesn't exist, but it's already in HTML
+            console.log('Chatbot modal should be created via HTML');
+        }
+
+        function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+
+            if (!message) return;
+
+            // Add user message to chat
+            addMessageToChat(message, 'user');
+
+            // Clear input
+            input.value = '';
+
+            // Show typing indicator
+            showTypingIndicator();
+
+            // Send message to backend
+            fetch('/chatbot', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: message
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide typing indicator
+                hideTypingIndicator();
+
+                // Add bot response to chat
+                addMessageToChat(data.response, 'bot');
+
+                // Show related queries if available
+                if (data.related_queries && data.related_queries.length > 0) {
+                    showRelatedQueries(data.related_queries);
+                }
+            })
+            .catch(error => {
+                console.error('Error sending message:', error);
+                hideTypingIndicator();
+                addMessageToChat('Sorry, I encountered an error. Please try again.', 'bot');
+            });
+        }
+
+        function addMessageToChat(message, sender) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}-message`;
+
+            const messageContent = document.createElement('div');
+            messageContent.textContent = message;
+
+            const timestamp = document.createElement('div');
+            timestamp.className = 'message-timestamp';
+            timestamp.textContent = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+            messageDiv.appendChild(messageContent);
+            messageDiv.appendChild(timestamp);
+
+            chatMessages.appendChild(messageDiv);
+
+            // Auto scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            const indicator = document.getElementById('typingIndicator');
+            indicator.style.display = 'block';
+        }
+
+        function hideTypingIndicator() {
+            const indicator = document.getElementById('typingIndicator');
+            indicator.style.display = 'none';
+        }
+
+        function showRelatedQueries(queries) {
+            const container = document.getElementById('relatedQueries');
+            container.innerHTML = '<small class="text-muted">Related topics:</small>';
+
+            queries.forEach(query => {
+                const queryElement = document.createElement('span');
+                queryElement.className = 'related-query';
+                queryElement.textContent = query;
+                queryElement.onclick = () => {
+                    document.getElementById('chatInput').value = query;
+                    container.style.display = 'none';
+                };
+                container.appendChild(queryElement);
+            });
+
+            container.style.display = 'block';
+        }
+
+        function handleChatKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendChatMessage();
+            }
         }
 
         function triggerEmergency() {

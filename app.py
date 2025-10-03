@@ -14,6 +14,15 @@ from collections import defaultdict, deque
 import statistics
 import math
 
+# Import chatbot knowledge base
+try:
+    from chatbot_knowledge import CHATBOT_KNOWLEDGE_BASE, CHATBOT_KEYWORDS, FALLBACK_RESPONSES
+except ImportError:
+    # Fallback if knowledge base file doesn't exist yet
+    CHATBOT_KNOWLEDGE_BASE = {}
+    CHATBOT_KEYWORDS = {}
+    FALLBACK_RESPONSES = ["I'm here to help with Alzheimer's information. Please ask me a specific question."]
+
 # Import compatible packages for Python 3.13
 # import googletrans  # For multi-language support - REMOVED due to Python 3.13 compatibility issues
 from reportlab.pdfgen import canvas  # For PDF generation
@@ -271,28 +280,121 @@ def generate_causal_analysis(data, risk_score):
 
     return causal_lines
 
+def get_chatbot_response(user_message):
+    """Enhanced rule-based chatbot for Alzheimer's information"""
+    if not user_message:
+        return "Please ask me a question about Alzheimer's disease or brain health."
+
+    # Convert message to lowercase for better matching
+    message_lower = user_message.lower().strip()
+
+    # Check for exact matches first
+    if message_lower in CHATBOT_KNOWLEDGE_BASE:
+        return CHATBOT_KNOWLEDGE_BASE[message_lower]
+
+    # Check for partial matches and keyword-based responses
+    best_match = None
+    best_score = 0
+
+    for question, answer in CHATBOT_KNOWLEDGE_BASE.items():
+        # Calculate similarity score based on word overlap
+        user_words = set(message_lower.split())
+        question_words = set(question.split())
+
+        # Remove common stop words for better matching
+        stop_words = {'what', 'is', 'are', 'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'how', 'why', 'when', 'where'}
+        user_words = user_words - stop_words
+        question_words = question_words - stop_words
+
+        if user_words and question_words:
+            # Calculate Jaccard similarity
+            intersection = len(user_words.intersection(question_words))
+            union = len(user_words.union(question_words))
+            score = intersection / union if union > 0 else 0
+
+            if score > best_score and score > 0.2:  # Threshold for relevance
+                best_score = score
+                best_match = answer
+
+    if best_match:
+        return best_match
+
+    # Check for keyword categories
+    for category, keywords in CHATBOT_KEYWORDS.items():
+        for keyword in keywords:
+            if keyword in message_lower:
+                # Find a relevant response based on the category
+                category_responses = [q for q in CHATBOT_KNOWLEDGE_BASE.keys() if category in q.lower()]
+                if category_responses:
+                    return CHATBOT_KNOWLEDGE_BASE[category_responses[0]]
+
+    # Return a fallback response
+    return random.choice(FALLBACK_RESPONSES) + " I can help you with information about Alzheimer's symptoms, prevention, treatment, caregiving, and brain health. What specific question do you have?"
+
 @app.route('/chatbot', methods=['POST'])
 def chatbot():
-    """Simple chatbot for health queries"""
-    user_message = request.get_json().get('message', '').lower()
+    """Enhanced chatbot endpoint for Alzheimer's information"""
+    user_message = request.get_json().get('message', '')
 
-    responses = {
-        'memory': "Memory training exercises like puzzles, reading, and learning new skills can help maintain cognitive function. Regular mental stimulation is important for brain health.",
-        'medicine': "Please consult with your healthcare provider about medication schedules and reminders. I recommend setting up a daily routine with alarms or pill organizers.",
-        'exercise': "Regular physical activity is crucial for brain health. Aim for 30 minutes of moderate exercise most days, such as walking, swimming, or yoga.",
-        'diet': "A brain-healthy diet includes fatty fish, berries, leafy greens, nuts, and whole grains. Stay hydrated and limit processed foods and excessive sugar.",
-        'sleep': "Quality sleep is essential for cognitive function. Aim for 7-9 hours per night and maintain a consistent sleep schedule.",
-        'stress': "Stress management techniques like meditation, deep breathing, and mindfulness can help protect cognitive health and improve overall well-being."
-    }
+    response = get_chatbot_response(user_message)
 
-    response = "I'm here to help with general health guidance. For personalized medical advice, please consult with healthcare professionals."
+    # Store conversation in session for context (optional)
+    if 'chat_history' not in session:
+        session['chat_history'] = []
 
-    for keyword, reply in responses.items():
-        if keyword in user_message:
-            response = reply
-            break
+    # Keep only last 20 messages for context
+    chat_history = session['chat_history']
+    chat_history.append({
+        'user': user_message,
+        'bot': response,
+        'timestamp': datetime.now().strftime('%H:%M')
+    })
 
-    return jsonify({'response': response})
+    if len(chat_history) > 20:
+        chat_history = chat_history[-20:]
+
+    session['chat_history'] = chat_history
+
+    return jsonify({
+        'response': response,
+        'related_queries': get_related_queries(user_message),
+        'can_answer': len(CHATBOT_KNOWLEDGE_BASE) > 0
+    })
+
+    # Optionally store conversation in database for logged-in users
+    if 'user_id' in session:
+        try:
+            db = get_db()
+            db.execute('''
+                INSERT INTO chatbot_conversations (user_id, user_message, bot_response, conversation_context)
+                VALUES (?, ?, ?, ?)
+            ''', (session['user_id'], user_message, response, json.dumps({
+                'related_queries': get_related_queries(user_message),
+                'timestamp': datetime.now().isoformat()
+            })))
+            db.commit()
+        except Exception as e:
+            print(f"Warning: Could not store chatbot conversation: {e}")
+
+def get_related_queries(user_message):
+    """Suggest related queries based on user input"""
+    if not user_message:
+        return []
+
+    message_lower = user_message.lower()
+
+    # Find related questions from knowledge base
+    related = []
+    for question in CHATBOT_KNOWLEDGE_BASE.keys():
+        # Check if any word from user message appears in a question
+        user_words = set(message_lower.split())
+        question_words = set(question.lower().split())
+
+        if user_words.intersection(question_words) and len(user_words.intersection(question_words)) > 0:
+            related.append(question.title())
+
+    # Limit to 5 related queries and remove duplicates
+    return list(set(related))[:5]
 
 @app.route('/anomaly_detection', methods=['POST'])
 def anomaly_detection():

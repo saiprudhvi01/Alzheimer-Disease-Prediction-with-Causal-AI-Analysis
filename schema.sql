@@ -85,6 +85,13 @@ INSERT INTO users (username, password, email, user_type) VALUES
 INSERT INTO users (username, password, email, user_type) VALUES
 ('patient1', 'pbkdf2:sha256:600000$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8$LeehkU1BEoH4Km2u', 'patient1@example.com', 'patient');
 
--- Insert sample doctor
-INSERT INTO users (username, password, email, user_type) VALUES
-('doctor1', 'pbkdf2:sha256:600000$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8$LeehkU1BEoH4Km2u', 'doctor1@alzheimerapp.com', 'doctor');
+DROP TABLE IF EXISTS chatbot_conversations;
+CREATE TABLE chatbot_conversations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    user_message TEXT NOT NULL,
+    bot_response TEXT NOT NULL,
+    conversation_context TEXT, -- JSON string for context
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users (id)
+);
